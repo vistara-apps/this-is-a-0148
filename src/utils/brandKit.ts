@@ -199,7 +199,7 @@ async function generateBrandGuidelines(
 }
 
 function generateUsageGuidelines(
-  logo: GeneratedLogo,
+  _logo: GeneratedLogo,
   customizations: LogoCustomization
 ): string {
   return `
@@ -234,7 +234,7 @@ function generateUsageGuidelines(
   `;
 }
 
-export async function downloadBrandKit(brandKit: BrandKit, logoName: string) {
+export async function downloadBrandKit(brandKit: BrandKit, _logoName: string) {
   try {
     // In a real application, you would zip all files together
     // For demo purposes, we'll download files individually

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { LogoCustomization } from '../types';
 import ColorPicker from './ColorPicker';
 import FontSelector from './FontSelector';

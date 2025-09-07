@@ -32,16 +32,6 @@ export async function generateLogoConcepts(params: LogoGenerationParams): Promis
     }
 
     try {
-      // Use DALL-E 3 for high-quality logo generation
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: prompt,
-        n: 1, // DALL-E 3 only supports n=1
-        size: "1024x1024",
-        style: "natural",
-        quality: "standard"
-      });
-
       // Generate multiple variations by calling the API multiple times
       const imageUrls: string[] = [];
       
@@ -58,7 +48,7 @@ export async function generateLogoConcepts(params: LogoGenerationParams): Promis
             quality: "standard"
           });
           
-          if (variationResponse.data[0]?.url) {
+          if (variationResponse.data?.[0]?.url) {
             imageUrls.push(variationResponse.data[0].url);
           }
         } catch (variationError) {

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Download, FileImage } from 'lucide-react';
 
 interface DownloadButtonProps {

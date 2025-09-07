@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Check, Download } from 'lucide-react';
 import { GeneratedLogo } from '../types';
 
