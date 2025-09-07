@@ -1,4 +1,4 @@
-import React from 'react';
+// React import not needed with new JSX transform
 import { Check, Star } from 'lucide-react';
 import { PricingTier } from '../types';
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GeneratedLogo, LogoCustomization, AppState, PricingTier } from './types';
 import { generateLogoConcepts, LogoGenerationParams } from './utils/openai';
 import { processPayment } from './utils/stripe';

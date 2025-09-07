@@ -1,4 +1,4 @@
-import React from 'react';
+// React import not needed with new JSX transform
 import { LogoCustomization } from '../types';
 import ColorPicker from './ColorPicker';
 import FontSelector from './FontSelector';

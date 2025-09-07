@@ -1,6 +1,5 @@
-import React from 'react';
+// React import not needed with new JSX transform
 import { GeneratedLogo, LogoCustomization } from '../types';
-import LogoPreviewCard from './LogoPreviewCard';
 import CustomizationPanel from './CustomizationPanel';
 
 interface LogoCustomizerProps {
