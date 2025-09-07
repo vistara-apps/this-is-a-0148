@@ -1,6 +1,9 @@
-import React, { useState, useCallback } from 'react';
-import { GeneratedLogo, LogoCustomization, AppState } from './types';
+import React, { useState, useCallback, useEffect } from 'react';
+import { GeneratedLogo, LogoCustomization, AppState, PricingTier } from './types';
 import { generateLogoConcepts, LogoGenerationParams } from './utils/openai';
+import { processPayment } from './utils/stripe';
+import { generateBrandKit, downloadBrandKit, BrandKit } from './utils/brandKit';
+import { getCurrentUser } from './utils/supabase';
 import Header from './components/Header';
 import PromptInput from './components/PromptInput';
 import LogoGeneration from './components/LogoGeneration';
@@ -25,6 +28,23 @@ export default function App() {
 
   const [generatedLogos, setGeneratedLogos] = useState<GeneratedLogo[]>([]);
   const [selectedLogo, setSelectedLogo] = useState<GeneratedLogo | undefined>();
+  const [selectedTier, setSelectedTier] = useState<PricingTier | undefined>();
+  const [brandKit, setBrandKit] = useState<BrandKit | undefined>();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Check for authenticated user on app load
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.log('No authenticated user');
+      }
+    };
+    checkUser();
+  }, []);
 
   const handleLogoGeneration = useCallback(async (params: LogoGenerationParams) => {
     setAppState(prev => ({ ...prev, isGenerating: true, error: undefined }));
@@ -76,11 +96,78 @@ export default function App() {
     setAppState(prev => ({ ...prev, currentStep: 'pricing' }));
   }, []);
 
-  const handleTierSelection = useCallback((tierId: string) => {
-    // In a real app, this would integrate with Stripe
-    console.log('Selected tier:', tierId);
-    setAppState(prev => ({ ...prev, currentStep: 'payment' }));
-  }, []);
+  const handleTierSelection = useCallback(async (tierId: string) => {
+    if (!selectedLogo) return;
+
+    // Find the selected tier
+    const pricingTiers = [
+      {
+        id: 'basic',
+        name: 'Basic Logo',
+        price: 25,
+        features: [
+          'AI-generated logo concepts',
+          'Basic customization',
+          'High-resolution PNG',
+          '1 logo variation',
+          'Commercial license'
+        ]
+      },
+      {
+        id: 'brand-kit',
+        name: 'Logo + Brand Kit',
+        price: 45,
+        popular: true,
+        features: [
+          'Everything in Basic',
+          'Multiple file formats (PNG, JPG, SVG)',
+          '3 color variations',
+          'Social media sizes',
+          'Favicon included',
+          'Brand color palette'
+        ]
+      },
+      {
+        id: 'premium',
+        name: 'Premium Package',
+        price: 75,
+        features: [
+          'Everything in Brand Kit',
+          'Logo usage guidelines',
+          'Business card template',
+          'Letterhead template',
+          'Vector source files',
+          'Priority support'
+        ]
+      }
+    ];
+
+    const tier = pricingTiers.find(t => t.id === tierId);
+    if (!tier) return;
+
+    setSelectedTier(tier);
+    setIsProcessingPayment(true);
+
+    try {
+      // Generate brand kit
+      const kit = await generateBrandKit(selectedLogo, appState.customizations, tier);
+      setBrandKit(kit);
+
+      // Process payment (demo mode)
+      const userId = currentUser?.id || 'demo-user';
+      await processPayment(tierId, selectedLogo.logoId, userId, tier);
+
+      setAppState(prev => ({ ...prev, currentStep: 'payment' }));
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      setAppState(prev => ({ 
+        ...prev, 
+        error: 'Payment processing failed. Please try again.' 
+      }));
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  }, [selectedLogo, appState.customizations, currentUser]);
 
   const renderCurrentStep = () => {
     switch (appState.currentStep) {
@@ -114,43 +201,81 @@ export default function App() {
         ) : null;
       
       case 'pricing':
-        return <PricingSection onSelectTier={handleTierSelection} />;
+        return (
+          <div className="max-w-6xl mx-auto">
+            <PricingSection onSelectTier={handleTierSelection} />
+            {isProcessingPayment && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-lg font-semibold">Processing your payment...</p>
+                  <p className="text-gray-600">Please wait while we prepare your brand kit.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
       
       case 'payment':
         return (
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="card">
-              <h2 className="text-3xl font-bold text-text mb-4">
-                🎉 Payment Successful!
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Your logo package is ready for download.
-              </p>
-              
-              <div className="space-y-4 mb-8">
-                <DownloadButton
-                  fileType="PNG (High-res)"
-                  fileName="logo.png"
-                  url={selectedLogo?.imageUrl || ''}
-                  size="2000x2000px"
-                  variant="primary"
-                />
-                <DownloadButton
-                  fileType="SVG (Vector)"
-                  fileName="logo.svg"
-                  url={selectedLogo?.imageUrl || ''}
-                  size="Scalable"
-                  variant="secondary"
-                />
-                <DownloadButton
-                  fileType="Favicon"
-                  fileName="favicon.ico"
-                  url={selectedLogo?.imageUrl || ''}
-                  size="32x32px"
-                  variant="secondary"
-                />
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="card">
+                <h2 className="text-3xl font-bold text-text mb-4">
+                  🎉 Payment Successful!
+                </h2>
+                <p className="text-lg text-gray-600 mb-4">
+                  Your {selectedTier?.name} package is ready for download.
+                </p>
+                {brandKit && (
+                  <div className="text-sm text-gray-500 mb-8">
+                    Package includes {brandKit.logoFiles.length} files
+                  </div>
+                )}
               </div>
-              
+            </div>
+
+            {brandKit && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {brandKit.logoFiles.map((file, index) => (
+                  <div key={index} className="card">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-semibold text-text">{file.name}</h3>
+                        <p className="text-sm text-gray-600">{file.description}</p>
+                        {file.size && (
+                          <p className="text-xs text-gray-500">{file.size}</p>
+                        )}
+                      </div>
+                      <div className="text-2xl">
+                        {file.type === 'png' && '🖼️'}
+                        {file.type === 'jpg' && '📷'}
+                        {file.type === 'svg' && '🎨'}
+                        {file.type === 'ico' && '🌐'}
+                        {file.type === 'pdf' && '📄'}
+                      </div>
+                    </div>
+                    <DownloadButton
+                      fileType={file.type.toUpperCase()}
+                      fileName={file.name}
+                      url={file.url}
+                      size={file.size || 'N/A'}
+                      variant="secondary"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="text-center space-y-4">
+              {brandKit && (
+                <button
+                  onClick={() => downloadBrandKit(brandKit, selectedLogo?.conceptDetails.prompt || 'logo')}
+                  className="btn-primary mr-4"
+                >
+                  Download Complete Brand Kit
+                </button>
+              )}
               <button
                 onClick={() => window.location.reload()}
                 className="btn-secondary"
@@ -158,6 +283,17 @@ export default function App() {
                 Create Another Logo
               </button>
             </div>
+
+            {brandKit?.guidelines && (
+              <div className="mt-12 card">
+                <h3 className="text-xl font-bold text-text mb-4">Brand Guidelines</h3>
+                <div className="prose prose-sm max-w-none text-gray-600">
+                  <pre className="whitespace-pre-wrap font-sans text-sm">
+                    {brandKit.guidelines}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         );
       
