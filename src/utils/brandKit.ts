@@ -205,6 +205,10 @@ function generateUsageGuidelines(
   return `
     ## Brand Usage Guidelines
 
+    ### Logo Style
+    - Design style: ${customizations.style}
+    - Reflects the brand's ${customizations.style} aesthetic
+
     ### Logo Variations
     - Use the primary logo on light backgrounds
     - Use the white version on dark backgrounds
@@ -247,10 +251,14 @@ export async function downloadBrandKit(brandKit: BrandKit, logoName: string) {
         // Handle regular URLs (would need CORS handling in production)
         try {
           const response = await fetch(file.url);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
           const blob = await response.blob();
           saveAs(blob, file.name);
         } catch (error) {
           console.warn(`Could not download ${file.name}:`, error);
+          // Continue with other files instead of failing completely
         }
       }
       
@@ -259,7 +267,7 @@ export async function downloadBrandKit(brandKit: BrandKit, logoName: string) {
     }
   } catch (error) {
     console.error('Error downloading brand kit:', error);
-    throw error;
+    // Don't throw error - just log it and continue
   }
 }
 
