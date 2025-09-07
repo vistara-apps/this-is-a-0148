@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Check, Star } from 'lucide-react';
 import { PricingTier } from '../types';
 

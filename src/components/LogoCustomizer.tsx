@@ -1,6 +1,4 @@
-import React from 'react';
 import { GeneratedLogo, LogoCustomization } from '../types';
-import LogoPreviewCard from './LogoPreviewCard';
 import CustomizationPanel from './CustomizationPanel';
 
 interface LogoCustomizerProps {

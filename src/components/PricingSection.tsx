@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { PricingTier } from '../types';
 import PricingCard from './PricingCard';
 

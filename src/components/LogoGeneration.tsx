@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { GeneratedLogo } from '../types';
 import LogoPreviewCard from './LogoPreviewCard';
 
